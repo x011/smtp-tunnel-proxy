@@ -247,7 +247,7 @@ interactive_setup() {
     print_ask "Enter your domain name (e.g., myserver.duckdns.org):"
     echo -e "    ${YELLOW}Tip: Get a free domain at duckdns.org, noip.com, or freedns.afraid.org${NC}"
     echo ""
-    read -p "    Domain: " DOMAIN_NAME
+    read -p "    Domain: " DOMAIN_NAME < /dev/tty
 
     if [ -z "$DOMAIN_NAME" ]; then
         print_error "Domain name is required!"
@@ -315,12 +315,12 @@ EOF
     # Ask to create first user
     echo ""
     print_ask "Would you like to create your first user now? [Y/n]: "
-    read -p "    " CREATE_USER
+    read -p "    " CREATE_USER < /dev/tty
 
     if [ -z "$CREATE_USER" ] || [ "$CREATE_USER" = "y" ] || [ "$CREATE_USER" = "Y" ]; then
         echo ""
         print_ask "Enter username for the first user:"
-        read -p "    Username: " FIRST_USER
+        read -p "    Username: " FIRST_USER < /dev/tty
 
         if [ -n "$FIRST_USER" ]; then
             echo ""
