@@ -7,8 +7,6 @@
 #
 # Version: 1.1.0
 
-set -e
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -145,12 +143,18 @@ install_files() {
 
     # Download Python files to install directory
     for file in $PYTHON_FILES; do
-        download_file "$file" "$INSTALL_DIR/$file" || exit 1
+        if ! download_file "$file" "$INSTALL_DIR/$file"; then
+            print_error "Failed to download required file: $file"
+            exit 1
+        fi
     done
 
     # Download and install management scripts
     for script in $SCRIPTS; do
-        download_file "$script" "$INSTALL_DIR/$script" || exit 1
+        if ! download_file "$script" "$INSTALL_DIR/$script"; then
+            print_error "Failed to download required script: $script"
+            exit 1
+        fi
         chmod +x "$INSTALL_DIR/$script"
         # Create symlink in bin directory
         ln -sf "$INSTALL_DIR/$script" "$BIN_DIR/$script"
@@ -158,20 +162,25 @@ install_files() {
     done
 
     # Download config template
-    download_file "config.yaml" "$INSTALL_DIR/config.yaml.template" || exit 1
+    download_file "config.yaml" "$INSTALL_DIR/config.yaml.template" || true
 
     # Download users template
-    download_file "users.yaml" "$INSTALL_DIR/users.yaml.template" || exit 1
+    download_file "users.yaml" "$INSTALL_DIR/users.yaml.template" || true
 
     # Download requirements.txt
-    download_file "requirements.txt" "$INSTALL_DIR/requirements.txt" || exit 1
+    if ! download_file "requirements.txt" "$INSTALL_DIR/requirements.txt"; then
+        print_error "Failed to download requirements.txt"
+        exit 1
+    fi
 }
 
 # Install Python packages
 install_python_packages() {
     print_step "Installing Python packages..."
 
+    pip3 install --root-user-action=ignore -q -r "$INSTALL_DIR/requirements.txt" 2>/dev/null || \
     pip3 install -q -r "$INSTALL_DIR/requirements.txt"
+
     print_info "Python packages installed"
 }
 
@@ -207,8 +216,6 @@ create_uninstall_script() {
     cat > "$INSTALL_DIR/uninstall.sh" << 'EOF'
 #!/bin/bash
 # SMTP Tunnel Proxy - Uninstall Script
-
-set -e
 
 echo "Stopping service..."
 systemctl stop smtp-tunnel 2>/dev/null || true
@@ -300,16 +307,12 @@ EOF
     print_step "Generating TLS certificates for $DOMAIN_NAME..."
 
     cd "$INSTALL_DIR"
-    python3 generate_certs.py --hostname "$DOMAIN_NAME" --output-dir "$CONFIG_DIR" 2>/dev/null
-
-    if [ $? -eq 0 ]; then
+    if python3 generate_certs.py --hostname "$DOMAIN_NAME" --output-dir "$CONFIG_DIR"; then
         print_info "Certificates generated successfully"
-        print_info "  CA Certificate: $CONFIG_DIR/ca.crt"
-        print_info "  Server Certificate: $CONFIG_DIR/server.crt"
-        print_info "  Server Key: $CONFIG_DIR/server.key"
     else
-        print_error "Failed to generate certificates"
-        exit 1
+        print_error "Failed to generate certificates. You can try manually:"
+        echo "    cd $INSTALL_DIR"
+        echo "    python3 generate_certs.py --hostname $DOMAIN_NAME --output-dir $CONFIG_DIR"
     fi
 
     # Ask to create first user
@@ -327,27 +330,27 @@ EOF
             print_step "Creating user '$FIRST_USER'..."
 
             cd "$INSTALL_DIR"
-            python3 "$INSTALL_DIR/smtp-tunnel-adduser" "$FIRST_USER" \
+            if python3 smtp-tunnel-adduser "$FIRST_USER" \
                 -u "$CONFIG_DIR/users.yaml" \
                 -c "$CONFIG_DIR/config.yaml" \
-                --ca-cert "$CONFIG_DIR/ca.crt"
-
-            if [ $? -eq 0 ]; then
+                --ca-cert "$CONFIG_DIR/ca.crt"; then
                 echo ""
                 print_info "User '$FIRST_USER' created successfully!"
                 print_info "Client package: $INSTALL_DIR/${FIRST_USER}.zip"
                 echo ""
                 echo -e "    ${YELLOW}Send this ZIP file to the user - it contains everything needed to connect!${NC}"
             else
-                print_warn "Failed to create user. You can create users later with: smtp-tunnel-adduser <username>"
+                print_warn "Failed to create user. You can create users later with:"
+                echo "    smtp-tunnel-adduser <username>"
             fi
         else
-            print_warn "No username provided. You can create users later with: smtp-tunnel-adduser <username>"
+            print_warn "No username provided. You can create users later with:"
+            echo "    smtp-tunnel-adduser <username>"
         fi
     else
         echo ""
         print_info "Skipping user creation."
-        print_info "You can create users later with: smtp-tunnel-adduser <username>"
+        echo "    You can create users later with: smtp-tunnel-adduser <username>"
     fi
 
     # Open firewall
@@ -355,11 +358,17 @@ EOF
     print_step "Configuring firewall..."
 
     if command -v ufw &> /dev/null; then
-        ufw allow 587/tcp >/dev/null 2>&1 && print_info "Opened port 587/tcp (ufw)" || print_warn "Could not configure ufw"
+        if ufw allow 587/tcp >/dev/null 2>&1; then
+            print_info "Opened port 587/tcp (ufw)"
+        else
+            print_warn "Could not configure ufw. Make sure port 587/tcp is open!"
+        fi
     elif command -v firewall-cmd &> /dev/null; then
-        firewall-cmd --permanent --add-port=587/tcp >/dev/null 2>&1 && \
-        firewall-cmd --reload >/dev/null 2>&1 && \
-        print_info "Opened port 587/tcp (firewalld)" || print_warn "Could not configure firewalld"
+        if firewall-cmd --permanent --add-port=587/tcp >/dev/null 2>&1 && firewall-cmd --reload >/dev/null 2>&1; then
+            print_info "Opened port 587/tcp (firewalld)"
+        else
+            print_warn "Could not configure firewalld. Make sure port 587/tcp is open!"
+        fi
     else
         print_warn "No firewall detected. Make sure port 587/tcp is open!"
     fi
@@ -368,15 +377,17 @@ EOF
     echo ""
     print_step "Starting SMTP Tunnel service..."
 
-    systemctl enable smtp-tunnel >/dev/null 2>&1
-    systemctl start smtp-tunnel
+    systemctl enable smtp-tunnel >/dev/null 2>&1 || true
+    systemctl start smtp-tunnel 2>&1 || true
 
     sleep 2
 
     if systemctl is-active --quiet smtp-tunnel; then
         print_info "Service started successfully!"
     else
-        print_error "Service failed to start. Check logs with: journalctl -u smtp-tunnel -n 50"
+        print_warn "Service may not have started. Check with:"
+        echo "    systemctl status smtp-tunnel"
+        echo "    journalctl -u smtp-tunnel -n 50"
     fi
 }
 
