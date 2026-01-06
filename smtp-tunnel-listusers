@@ -4,7 +4,7 @@ SMTP Tunnel - List Users Script
 
 Shows all configured users.
 
-Version: 1.2.0
+Version: 1.3.0
 """
 
 import argparse

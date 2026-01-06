@@ -5,7 +5,7 @@
 # One-liner installation:
 #   curl -sSL https://raw.githubusercontent.com/x011/smtp-tunnel-proxy/main/install.sh | sudo bash
 #
-# Version: 1.2.0
+# Version: 1.3.0
 
 # Colors for output
 RED='\033[0;31m'
@@ -25,7 +25,7 @@ BIN_DIR="/usr/local/bin"
 
 # Files to download
 PYTHON_FILES="server.py client.py common.py generate_certs.py"
-SCRIPTS="smtp-tunnel-adduser smtp-tunnel-deluser smtp-tunnel-listusers"
+SCRIPTS="smtp-tunnel-adduser smtp-tunnel-deluser smtp-tunnel-listusers smtp-tunnel-update"
 
 # Print functions
 print_info() {

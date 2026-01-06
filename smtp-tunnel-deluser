@@ -4,7 +4,7 @@ SMTP Tunnel - Delete User Script
 
 Removes a user from the users configuration.
 
-Version: 1.2.0
+Version: 1.3.0
 """
 
 import argparse

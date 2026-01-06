@@ -2,7 +2,7 @@
 """
 SMTP Tunnel Server - Fast Binary Mode
 
-Version: 1.2.0
+Version: 1.3.0
 
 Protocol:
 1. SMTP handshake (EHLO, STARTTLS, AUTH) - looks like real SMTP

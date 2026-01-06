@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# SMTP Tunnel Proxy - Update Script
+#
+# Updates server files without touching config, certs, or users.
+#
+# Version: 1.3.0
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# GitHub raw URL
+GITHUB_RAW="https://raw.githubusercontent.com/x011/smtp-tunnel-proxy/main"
+
+# Installation directory
+INSTALL_DIR="/opt/smtp-tunnel"
+
+# Files to update (code only - NOT config/certs/users)
+UPDATE_FILES="server.py client.py common.py generate_certs.py smtp-tunnel-adduser smtp-tunnel-deluser smtp-tunnel-listusers smtp-tunnel-update"
+
+print_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+print_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check root
+if [ "$EUID" -ne 0 ]; then
+    print_error "Please run as root (use sudo)"
+    exit 1
+fi
+
+# Check installation exists
+if [ ! -d "$INSTALL_DIR" ]; then
+    print_error "SMTP Tunnel not installed at $INSTALL_DIR"
+    print_error "Run the installer first: curl -sSL $GITHUB_RAW/install.sh | sudo bash"
+    exit 1
+fi
+
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  SMTP Tunnel Update${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
+
+# Show current version
+if [ -f "$INSTALL_DIR/server.py" ]; then
+    CURRENT_VERSION=$(grep -m1 "Version:" "$INSTALL_DIR/server.py" | sed 's/.*Version: //')
+    print_info "Current version: $CURRENT_VERSION"
+fi
+
+# Download files
+print_info "Downloading updates..."
+cd "$INSTALL_DIR"
+
+FAILED=0
+for file in $UPDATE_FILES; do
+    if curl -sSL -f "$GITHUB_RAW/$file" -o "$file.new" 2>/dev/null; then
+        mv "$file.new" "$file"
+        echo "  Updated: $file"
+    else
+        print_warn "  Failed: $file"
+        rm -f "$file.new"
+        FAILED=1
+    fi
+done
+
+# Set permissions
+chmod +x smtp-tunnel-adduser smtp-tunnel-deluser smtp-tunnel-listusers smtp-tunnel-update 2>/dev/null
+
+# Update symlinks
+ln -sf "$INSTALL_DIR/smtp-tunnel-update" /usr/local/bin/smtp-tunnel-update 2>/dev/null
+
+if [ $FAILED -eq 1 ]; then
+    print_warn "Some files failed to update"
+fi
+
+# Show new version
+if [ -f "$INSTALL_DIR/server.py" ]; then
+    NEW_VERSION=$(grep -m1 "Version:" "$INSTALL_DIR/server.py" | sed 's/.*Version: //')
+    print_info "New version: $NEW_VERSION"
+fi
+
+# Restart service
+print_info "Restarting service..."
+systemctl restart smtp-tunnel 2>/dev/null
+
+if systemctl is-active --quiet smtp-tunnel; then
+    print_info "Service restarted successfully"
+else
+    print_warn "Service may not have started. Check: systemctl status smtp-tunnel"
+fi
+
+echo ""
+print_info "Update complete!"
+echo ""
+echo "Your config, certificates, and users were NOT modified."
+echo ""

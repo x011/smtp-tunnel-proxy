@@ -3,7 +3,7 @@
 Generate self-signed TLS certificates for SMTP tunnel.
 Creates server certificate that mimics a real mail server.
 
-Version: 1.2.0
+Version: 1.3.0
 """
 
 import os

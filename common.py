@@ -2,7 +2,7 @@
 SMTP Tunnel - Common Protocol and Utilities
 Shared components for both client and server.
 
-Version: 1.2.0
+Version: 1.3.0
 """
 
 import struct
@@ -843,21 +843,26 @@ def save_users(path: str, users: Dict[str, UserConfig]):
         path: Path to users.yaml
         users: Dict of {username: UserConfig}
     """
-    import yaml
+    lines = ["# SMTP Tunnel Users", "# Managed by smtp-tunnel-adduser", "", "users:"]
 
-    data = {'users': {}}
     for username, user in users.items():
-        user_data = {
-            'secret': user.secret,
-        }
+        lines.append(f"  {username}:")
+        lines.append(f"    secret: {user.secret}")
+        lines.append(f"    logging: {str(user.logging).lower()}")
+
         if user.whitelist:
-            user_data['whitelist'] = user.whitelist
-        if not user.logging:
-            user_data['logging'] = False
-        data['users'][username] = user_data
+            lines.append("    whitelist:")
+            for ip in user.whitelist:
+                lines.append(f"      - {ip}")
+        else:
+            lines.append("    # whitelist:")
+            lines.append("    #   - 192.168.1.100")
+            lines.append("    #   - 10.0.0.0/8")
+
+        lines.append("")
 
     with open(path, 'w') as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False)
+        f.write('\n'.join(lines))
 
 
 # ============================================================================
