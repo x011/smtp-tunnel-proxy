@@ -61,57 +61,28 @@ Get a free domain pointing to your VPS:
 
 Example: `myserver.duckdns.org` → `203.0.113.50` (your VPS IP)
 
-### Step 2️⃣: Install Server (One-Liner)
+### Step 2️⃣: Run the Installer
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/x011/smtp-tunnel-proxy/main/install.sh | sudo bash
 ```
 
-This automatically:
-- ✅ Installs Python and dependencies
-- ✅ Downloads all required files
-- ✅ Sets up systemd service
-- ✅ Creates user management commands
+The installer will:
+1. 📥 Download and install everything
+2. ❓ Ask for your domain name
+3. 🔐 Generate TLS certificates automatically
+4. 👤 Offer to create your first user
+5. 🔥 Configure firewall
+6. 🚀 Start the service
 
-### Step 3️⃣: Configure & Generate Certificates
+**That's it!** Your server is ready.
 
-```bash
-# Edit configuration - set your domain name
-nano /etc/smtp-tunnel/config.yaml
-
-# Generate TLS certificates
-cd /opt/smtp-tunnel
-python3 generate_certs.py --hostname YOUR-DOMAIN.duckdns.org --output-dir /etc/smtp-tunnel
-```
-
-### Step 4️⃣: Add Users
+### ➕ Add More Users Later
 
 ```bash
-# Add a user (generates client package automatically)
-smtp-tunnel-adduser alice
-
-# Output:
-# ✅ User 'alice' added
-# 📦 Client package: alice.zip
-# Send this ZIP to the user - contains everything needed to connect!
-
-# Other user management commands:
+smtp-tunnel-adduser bob      # Add user + generate client ZIP
 smtp-tunnel-listusers        # List all users
-smtp-tunnel-deluser alice    # Remove a user
-```
-
-### Step 5️⃣: Open Firewall & Start
-
-```bash
-# Open firewall
-ufw allow 587/tcp
-
-# Enable and start service
-systemctl enable smtp-tunnel
-systemctl start smtp-tunnel
-
-# Check status
-systemctl status smtp-tunnel
+smtp-tunnel-deluser bob      # Remove a user
 ```
 
 ---
