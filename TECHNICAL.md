@@ -1,56 +1,56 @@
-# SMTP Tunnel - Technical Documentation
+# 📧 SMTP Tunnel - Technical Documentation
 
 This document provides in-depth technical details about the SMTP Tunnel Proxy, including protocol design, DPI evasion techniques, security analysis, and implementation details.
 
-> For basic setup and usage, see [README.md](README.md).
+> 📖 For basic setup and usage, see [README.md](README.md).
 
 ---
 
-## Table of Contents
+## 📑 Table of Contents
 
-- [Why SMTP?](#why-smtp)
-- [How It Bypasses DPI](#how-it-bypasses-dpi)
-- [Why It's Fast](#why-its-fast)
-- [Architecture](#architecture)
-- [Protocol Design](#protocol-design)
-- [Component Details](#component-details)
-- [Security Analysis](#security-analysis)
-- [Domain vs IP Address](#domain-name-vs-ip-address-security-implications)
-- [Advanced Configuration](#advanced-configuration)
+- [📨 Why SMTP?](#-why-smtp)
+- [🎭 How It Bypasses DPI](#-how-it-bypasses-dpi)
+- [⚡ Why It's Fast](#-why-its-fast)
+- [🏗️ Architecture](#️-architecture)
+- [📐 Protocol Design](#-protocol-design)
+- [🔧 Component Details](#-component-details)
+- [🔐 Security Analysis](#-security-analysis)
+- [🌐 Domain vs IP Address](#-domain-name-vs-ip-address-security-implications)
+- [⚙️ Advanced Configuration](#️-advanced-configuration)
 
 ---
 
-## Why SMTP?
+## 📨 Why SMTP?
 
 SMTP (Simple Mail Transfer Protocol) is the protocol used for sending emails. It's an excellent choice for tunneling because:
 
-### 1. Ubiquitous Traffic
+### 1️⃣ Ubiquitous Traffic
 - Email is essential infrastructure - blocking it breaks legitimate services
 - SMTP traffic on port 587 (submission) is expected and normal
 - Millions of emails traverse networks every second
 
-### 2. Expected to be Encrypted
+### 2️⃣ Expected to be Encrypted
 - STARTTLS is standard for SMTP - encrypted email is normal
 - DPI systems expect to see TLS-encrypted SMTP traffic
 - No red flags for encrypted content
 
-### 3. Flexible Protocol
+### 3️⃣ Flexible Protocol
 - SMTP allows large data transfers (attachments)
 - Binary data is normal (MIME-encoded attachments)
 - Long-lived connections are acceptable
 
-### 4. Hard to Block
+### 4️⃣ Hard to Block
 - Blocking port 587 would break email for everyone
 - Can't easily distinguish tunnel from real email after TLS
 - Would require blocking all encrypted email
 
 ---
 
-## How It Bypasses DPI
+## 🎭 How It Bypasses DPI
 
 Deep Packet Inspection (DPI) systems analyze network traffic to identify and block certain protocols or content. Here's how SMTP Tunnel evades detection:
 
-### Phase 1: The Deception (Plaintext)
+### 🔍 Phase 1: The Deception (Plaintext)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -82,7 +82,7 @@ Deep Packet Inspection (DPI) systems analyze network traffic to identify and blo
 - Proper RFC 5321 compliance
 - Port 587 is standard SMTP submission port
 
-### Phase 2: TLS Handshake
+### 🔒 Phase 2: TLS Handshake
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -106,7 +106,7 @@ Deep Packet Inspection (DPI) systems analyze network traffic to identify and blo
 - Server certificate for mail domain
 - Normal cipher negotiation
 
-### Phase 3: Encrypted Tunnel (Invisible)
+### 🚀 Phase 3: Encrypted Tunnel (Invisible)
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -140,7 +140,7 @@ Deep Packet Inspection (DPI) systems analyze network traffic to identify and blo
 - Switch to binary streaming mode
 - Full-speed TCP tunneling
 
-### Why DPI Can't Detect It
+### ❌ Why DPI Can't Detect It
 
 | DPI Technique | Why It Fails |
 |---------------|--------------|
@@ -153,14 +153,14 @@ Deep Packet Inspection (DPI) systems analyze network traffic to identify and blo
 
 ---
 
-## Why It's Fast
+## ⚡ Why It's Fast
 
 Previous versions used SMTP commands for every data packet, requiring:
 - 4 round-trips per data chunk (MAIL FROM → RCPT TO → DATA → response)
 - Base64 encoding (33% overhead)
 - MIME wrapping (more overhead)
 
-### The New Approach: Protocol Upgrade
+### 🚀 The New Approach: Protocol Upgrade
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -192,7 +192,7 @@ Previous versions used SMTP commands for every data packet, requiring:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Performance Comparison
+### 📊 Performance Comparison
 
 | Metric | Old SMTP Method | New Binary Method |
 |--------|-----------------|-------------------|
@@ -204,9 +204,9 @@ Previous versions used SMTP commands for every data packet, requiring:
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
-### System Components
+### 🖥️ System Components
 
 ```
 YOUR COMPUTER                           YOUR VPS                        INTERNET
@@ -228,7 +228,7 @@ YOUR COMPUTER                           YOUR VPS                        INTERNET
      Censored Network                      Free Internet
 ```
 
-### Data Flow
+### 📡 Data Flow
 
 ```
 1. Browser wants to access https://example.com
@@ -251,9 +251,9 @@ YOUR COMPUTER                           YOUR VPS                        INTERNET
 
 ---
 
-## Protocol Design
+## 📐 Protocol Design
 
-### Frame Format (Binary Mode)
+### 📦 Frame Format (Binary Mode)
 
 All communication after handshake uses this simple binary frame format:
 
@@ -280,7 +280,7 @@ Length (2 bytes): Payload size (max 65535 bytes)
 Payload (variable): The actual data
 ```
 
-### CONNECT Payload Format
+### 🔗 CONNECT Payload Format
 
 ```
 ┌───────────────┬─────────────────────────┬───────────────┐
@@ -289,7 +289,7 @@ Payload (variable): The actual data
 └───────────────┴─────────────────────────┴───────────────┘
 ```
 
-### Session State Machine
+### 🔄 Session State Machine
 
 ```
                     ┌─────────┐
@@ -340,9 +340,9 @@ Payload (variable): The actual data
 
 ---
 
-## Component Details
+## 🔧 Component Details
 
-### server.py - Server Component
+### 🖥️ server.py - Server Component
 
 **Purpose:** Runs on your VPS in an uncensored network. Accepts tunnel connections and forwards traffic to the real internet.
 
@@ -362,7 +362,7 @@ Payload (variable): The actual data
 | `TunnelSession` | Handles one client connection |
 | `Channel` | Represents one tunneled TCP connection |
 
-### client.py - Client Component
+### 💻 client.py - Client Component
 
 **Purpose:** Runs on your local computer. Provides a SOCKS5 proxy interface and tunnels traffic through the server.
 
@@ -381,7 +381,7 @@ Payload (variable): The actual data
 | `SOCKS5Server` | Local SOCKS5 proxy |
 | `Channel` | One proxied connection |
 
-### common.py - Shared Utilities
+### 📚 common.py - Shared Utilities
 
 **Purpose:** Code shared between client and server.
 
@@ -396,7 +396,7 @@ Payload (variable): The actual data
 | `ServerConfig` | Server configuration dataclass |
 | `ClientConfig` | Client configuration dataclass |
 
-### generate_certs.py - Certificate Generator
+### 🔐 generate_certs.py - Certificate Generator
 
 **Purpose:** Creates TLS certificates for the tunnel.
 
@@ -416,9 +416,9 @@ Payload (variable): The actual data
 
 ---
 
-## Security Analysis
+## 🔐 Security Analysis
 
-### Authentication Flow
+### 🔑 Authentication Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -441,7 +441,7 @@ Payload (variable): The actual data
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Encryption Layers
+### 🔒 Encryption Layers
 
 | Layer | Protection |
 |-------|------------|
@@ -449,7 +449,7 @@ Payload (variable): The actual data
 | **Pre-shared Key** | Authentication |
 | **HMAC-SHA256** | Token integrity |
 
-### Threat Model
+### ⚠️ Threat Model
 
 | Threat | Mitigation |
 |--------|------------|
@@ -459,7 +459,7 @@ Payload (variable): The actual data
 | Unauthorized access | Pre-shared key authentication |
 | Protocol detection | SMTP mimicry during handshake |
 
-### Security Recommendations
+### ✅ Security Recommendations
 
 1. **Use a strong secret:** Generate with `python -c "import secrets; print(secrets.token_urlsafe(32))"`
 
@@ -475,9 +475,9 @@ Payload (variable): The actual data
 
 ---
 
-## Domain Name vs IP Address: Security Implications
+## 🌐 Domain Name vs IP Address: Security Implications
 
-### Understanding TLS Certificate Verification
+### 🔍 Understanding TLS Certificate Verification
 
 TLS certificates are digital documents that prove a server's identity. When your client connects to a server, it can verify:
 
@@ -508,7 +508,7 @@ TLS certificates are digital documents that prove a server's identity. When your
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### The IP Address Problem
+### ❌ The IP Address Problem
 
 TLS certificates store identifiers in specific fields within the **Subject Alternative Name (SAN)** extension:
 
@@ -526,7 +526,7 @@ SAN: IPAddress = 192.168.1.100   ← This is what would be needed
 
 When the TLS library verifies a connection to an IP address, it looks for a matching `IPAddress` field, **not** a `DNSName` field. Even if the values are identical, the types don't match, so verification fails.
 
-### Man-in-the-Middle Attack Explained
+### 🚨 Man-in-the-Middle Attack Explained
 
 When certificate verification is disabled, an attacker can intercept your connection:
 
@@ -573,7 +573,7 @@ When certificate verification is disabled, an attacker can intercept your connec
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Security Options Comparison
+### 📊 Security Options Comparison
 
 | Configuration | MITM Protected? | Works? | Recommended? |
 |---------------|-----------------|--------|--------------|
@@ -582,7 +582,7 @@ When certificate verification is disabled, an attacker can intercept your connec
 | IP address + `ca_cert` set | — | NO | Won't work |
 | IP address + no `ca_cert` | NO | YES | Vulnerable |
 
-### Risk Assessment
+### 🎯 Risk Assessment
 
 | Threat | With Verification | Without Verification |
 |--------|-------------------|----------------------|
@@ -596,9 +596,9 @@ When certificate verification is disabled, an attacker can intercept your connec
 
 ---
 
-## Advanced Configuration
+## ⚙️ Advanced Configuration
 
-### Full Configuration Reference
+### 📝 Full Configuration Reference
 
 ```yaml
 # ============================================================================
@@ -682,14 +682,14 @@ stealth:
   dummy_message_probability: 0.1
 ```
 
-### SMTP Protocol Compliance
+### 📜 SMTP Protocol Compliance
 
 The tunnel implements these SMTP RFCs during handshake:
 - **RFC 5321** - Simple Mail Transfer Protocol
 - **RFC 3207** - SMTP Service Extension for Secure SMTP over TLS
 - **RFC 4954** - SMTP Service Extension for Authentication
 
-### Multiplexing
+### 📡 Multiplexing
 
 Multiple TCP connections are multiplexed over a single tunnel:
 
@@ -708,19 +708,19 @@ Multiple TCP connections are multiplexed over a single tunnel:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Memory Usage
+### 💾 Memory Usage
 
 - **Server:** ~50MB base + ~1MB per active connection
 - **Client:** ~30MB base + ~0.5MB per active channel
 
-### Concurrency Model
+### ⚙️ Concurrency Model
 
 Both client and server use Python's `asyncio` for efficient handling of multiple simultaneous connections without threads.
 
 ---
 
-## Version Information
+## 📋 Version Information
 
-- **Current Version:** 1.0.0
+- **Current Version:** 1.1.0
 - **Protocol Version:** Binary streaming v1
 - **Minimum Python:** 3.8
