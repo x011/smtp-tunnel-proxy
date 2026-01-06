@@ -323,7 +323,9 @@ class TunnelCrypto:
                 return False, None
 
             user_data = users[username]
-            if isinstance(user_data, dict):
+            if isinstance(user_data, UserConfig):
+                secret = user_data.secret
+            elif isinstance(user_data, dict):
                 secret = user_data.get('secret', '')
             else:
                 secret = str(user_data)
