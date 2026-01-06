@@ -201,7 +201,9 @@ echo.
 %PYTHON% client.py
 
 echo.
-pause
+echo Connection closed.
+echo Press any key to exit...
+pause >nul
 '''
         bat_path = os.path.join(pkg_dir, 'start.bat')
         with open(bat_path, 'w', newline='\r\n') as f:
@@ -281,6 +283,9 @@ echo "────────────────────────�
 echo ""
 
 $PYTHON client.py
+
+echo ""
+echo -e "${{YELLOW}}Connection closed.${{NC}}"
 '''
         sh_path = os.path.join(pkg_dir, 'start.sh')
         with open(sh_path, 'w') as f:
